@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vice Neon Cover Studio — GTA 6-style cover art maker</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<main class="app">
+  <section class="controls" id="controls" aria-label="Cover controls">
+    <h1>Vice Neon <span>Cover Studio</span></h1>
+    <p class="lede">Your photos, five panels, one Vice City sunset. Load photos, pick a layout and grade, write the lettering, export a PNG.</p>
+
+    <fieldset class="group">
+      <legend>1 · Photos</legend>
+      <div id="slots"></div>
+      <button id="sample-photos" type="button" class="ghost">Load the sample photos</button>
+      <button id="fill-all" type="button" class="ghost">Fill all panels with the selected photo</button>
+      <label class="slider-label">Zoom selected panel
+        <input id="zoom" type="range" min="1" max="3" step="0.05" value="1">
+      </label>
+      <p class="hint">Click a panel in the preview to select it, then drag inside it to pan and scroll or use the slider to zoom.</p>
+    </fieldset>
+
+    <fieldset class="group">
+      <legend>2 · Layout</legend>
+      <div class="picker" id="layout-picker" role="group" aria-label="Layout"></div>
+    </fieldset>
+
+    <fieldset class="group">
+      <legend>3 · Colour grade</legend>
+      <div class="picker" id="grade-picker" role="group" aria-label="Colour grade"></div>
+    </fieldset>
+
+    <fieldset class="group">
+      <legend>4 · Lettering</legend>
+      <label>Title <input id="title" type="text" maxlength="24" value="SUNSET HEIST"></label>
+      <label>Script subtitle <input id="subtitle" type="text" maxlength="30" value="Vice City nights"></label>
+      <label>Tagline <input id="tagline" type="text" maxlength="40" value="EVERY STREET IS A STAGE"></label>
+      <label>Place pill <input id="place" type="text" maxlength="20" value="VICE BAY"></label>
+      <label>Corner ribbon <input id="ribbon" type="text" maxlength="24" value="ONE LAST SCORE"></label>
+      <label class="slider-label">Heat meter <span id="heat-stars" class="heat-stars">★★★★☆</span>
+        <input id="heat" type="range" min="1" max="5" step="1" value="4">
+      </label>
+    </fieldset>
+
+    <fieldset class="group">
+      <legend>5 · Decorations</legend>
+      <label class="check"><input id="banner" type="checkbox" checked> Sunburst + skyline banner</label>
+      <p class="hint">A gradient strip with sunburst rays and a city skyline across the bottom of the cover, behind the tagline.</p>
+    </fieldset>
+
+    <fieldset class="group">
+      <legend>6 · Export PNG</legend>
+      <label>Preview size
+        <select id="preview-size">
+          <option value="1080x1080" selected>Square · 1080 × 1080</option>
+          <option value="1080x1350">Portrait · 1080 × 1350</option>
+          <option value="1920x1080">Landscape · 1920 × 1080</option>
+        </select>
+      </label>
+      <div class="exports">
+        <button id="export-1080x1080" type="button">PNG 1080 × 1080</button>
+        <button id="export-1080x1350" type="button">PNG 1080 × 1350</button>
+        <button id="export-1920x1080" type="button">PNG 1920 × 1080</button>
+      </div>
+      <p id="status" role="status"></p>
+    </fieldset>
+    <p class="fineprint">Photos stay on your machine — nothing is uploaded. Original art only: no game logos, artwork or fonts.</p>
+  </section>
+
+  <section class="stage" aria-label="Live preview">
+    <canvas id="cover" width="1080" height="1080" aria-label="The cover, live preview"></canvas>
+  </section>
+</main>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
