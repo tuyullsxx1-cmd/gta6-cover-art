@@ -1,72 +1,57 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Palm Smoke Studio — GTA 6 cover art maker</title>
 <link rel="icon" href="data:,">
-<title>Palm Smoke Studio — make your own sunset cover</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="./style.css">
 </head>
 <body>
-<header class="topbar">
-  <div>
-    <h1>PALM SMOKE STUDIO</h1>
-    <p class="tagline">Turn your photos into a sun-soaked movie poster. Everything runs offline, in your browser.</p>
-  </div>
-  <div class="top-actions">
-    <button type="button" id="resetBtn" class="btn ghost">Reset sample cast</button>
-    <button type="button" id="exportBtn" class="btn gold">Export PNG</button>
-  </div>
+<header>
+  <h1>PALM SMOKE STUDIO</h1>
+  <p class="tagline">Turn your photos into a dense movie poster — one last sunset job.</p>
 </header>
-
-<main id="editor">
-  <section class="preview-wrap">
-    <canvas id="preview" width="960" height="540"></canvas>
-    <p class="hint">Click a panel to select it — drag it to pan, scroll to zoom. Sliders below do the same job.</p>
-    <p id="exportStatus" class="status" aria-live="polite"></p>
-  </section>
-
-  <aside class="controls">
-    <section class="panel">
-      <h2>Poster text</h2>
-      <label>Title <input id="titleInput" type="text" maxlength="24" autocomplete="off"></label>
-      <label>Script subtitle <input id="subtitleInput" type="text" maxlength="48" autocomplete="off"></label>
-      <label>Quote <input id="quoteInput" type="text" maxlength="90" autocomplete="off"></label>
-      <label>Newspaper <input id="paperInput" type="text" maxlength="32" autocomplete="off"></label>
-    </section>
-
-    <section class="panel">
-      <h2>Layout</h2>
-      <div class="choices">
-        <button type="button" class="layout-btn btn" data-value="grid">Cast grid</button>
-        <button type="button" class="layout-btn btn" data-value="spotlight">Spotlight</button>
-      </div>
-      <h2>Colour grade</h2>
-      <div class="choices">
-        <button type="button" class="grade-btn btn" data-value="sunset">Sunset</button>
-        <button type="button" class="grade-btn btn" data-value="neon">Neon</button>
-        <button type="button" class="grade-btn btn" data-value="dusk">Dusk</button>
-      </div>
-      <h2>Export size</h2>
-      <select id="sizeSelect">
-        <option value="1920x1080">1920 × 1080 (landscape)</option>
-        <option value="1080x1080">1080 × 1080 (square)</option>
-        <option value="1080x1350">1080 × 1350 (portrait)</option>
-      </select>
-    </section>
-
-    <section class="panel">
-      <h2>Cast photos — up to 6</h2>
-      <p class="note">Load your own photos (they never leave your machine) or keep the six sample portraits. One photo can fill every panel.</p>
-      <div id="slots" class="slots"></div>
-    </section>
+<div id="toolbar">
+  <div class="group">
+    <span class="label">Layout</span>
+    <button type="button" data-layout="grid" class="active">Cast grid</button>
+    <button type="button" data-layout="spotlight">Spotlight</button>
+  </div>
+  <div class="group">
+    <span class="label">Grade</span>
+    <button type="button" data-grade="sunset" class="active">Sunset</button>
+    <button type="button" data-grade="neon">Neon</button>
+    <button type="button" data-grade="dusk">Dusk</button>
+  </div>
+  <div class="group">
+    <span class="label">Preview size</span>
+    <button type="button" data-size="1920x1080" class="active">1920×1080</button>
+    <button type="button" data-size="1080x1080">1080×1080</button>
+    <button type="button" data-size="1080x1350">1080×1350</button>
+  </div>
+  <div class="group">
+    <span class="label">Export PNG</span>
+    <button type="button" data-export="1920x1080">1920×1080</button>
+    <button type="button" data-export="1080x1080">1080×1080</button>
+    <button type="button" data-export="1080x1350">1080×1350</button>
+  </div>
+</div>
+<main>
+  <div id="stage-wrap">
+    <canvas id="stage" width="1920" height="1080"></canvas>
+    <p class="hint">Click a cast panel to select it, drag to pan, scroll to zoom. Edit a caption in the cast list.</p>
+  </div>
+  <aside id="panels">
+    <h2>Cast — click Upload to use your own photo</h2>
+    <div id="panel-list"></div>
   </aside>
 </main>
-
-<div id="coverMode" hidden>
-  <canvas id="coverCanvas"></canvas>
-</div>
-
-<script type="module" src="src/main.js"></script>
+<footer>
+  <p>Your photos never leave this machine — everything runs in your browser, offline.</p>
+  <p>Built for the <a href="https://make.fun/bounty/gta6-cover-art-01">make.fun GTA 6 cover art bounty</a>.</p>
+</footer>
+<input type="file" id="file-input" accept="image/*" hidden>
+<script type="module" src="./src/main.js"></script>
 </body>
 </html>
