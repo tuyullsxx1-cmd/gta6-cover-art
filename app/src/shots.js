@@ -1,21 +1,12 @@
-// shots.js — reads ?shot=... staging params for screenshots.
-//   ?shot=cover  renders the export view full-bleed (the poster only)
-//   ?shot=editor shows the editor with a photo loaded
-// Optional: photo=cast-1..6 (hero sample), caption=..., grade=sunset|neon|dusk,
-// layout=grid|spotlight, size=1080x1080|1080x1350|1920x1080.
-export function parseShot() {
-  const q = new URLSearchParams(location.search);
-  return {
-    shot: q.get('shot') || '',
-    photo: q.get('photo') || '',
-    caption: q.get('caption') || '',
-    grade: q.get('grade') || '',
-    layout: q.get('layout') || '',
-    size: q.get('size') || '',
+// shots.js — ?shot= staging presets for screenshots and demos.
+export function getShot() {
+  const p = new URLSearchParams(location.search);
+  const shot = p.get('shot') || 'cover';
+  const presets = {
+    cover: { mode: 'cover', layout: 'grid', grade: 'sunset', size: [1920, 1080] },
+    editor: { mode: 'editor', layout: 'grid', grade: 'sunset', size: [1920, 1080] },
+    cover2: { mode: 'cover', layout: 'spotlight', grade: 'neon', size: [1080, 1080] },
+    cover3: { mode: 'cover', layout: 'grid', grade: 'dusk', size: [1080, 1350] },
   };
-}
-
-export function sampleSrc(photo) {
-  const m = /^cast-[1-6]$/.exec(photo || '');
-  return m ? `samples/${photo}.jpg` : 'samples/cast-1.jpg';
+  return presets[shot] || presets.cover;
 }
