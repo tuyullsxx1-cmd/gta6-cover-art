@@ -1,36 +1,70 @@
-# Vice Neon Cover Studio
+![make.fun](https://make.fun/badge/gta6-cover-art-01.svg)
+![rank](https://make.fun/badge/gta6-cover-art-01/tuyullsxx1-cmd/gta6-cover-art/rank.svg)
+![reward](https://make.fun/badge/gta6-cover-art-01/tuyullsxx1-cmd/gta6-cover-art/reward.svg)
 
-[![make.fun](https://make.fun/badge/gta6-cover-art-01.svg)](https://make.fun/bounty/gta6-cover-art-01)
-[![Rank](https://make.fun/badge/gta6-cover-art-01/tuyullsxx1-cmd/gta6-cover-art/rank.svg)](https://make.fun/bounty/gta6-cover-art-01)
-[![Reward](https://make.fun/badge/gta6-cover-art-01/tuyullsxx1-cmd/gta6-cover-art/reward.svg)](https://make.fun/bounty/gta6-cover-art-01)
+# Palm Smoke Studio
 
-Vice Neon Cover Studio is an offline single-page web app that turns your photos and a caption into GTA 6 poster-style cover art, exported as a PNG to share. It was built for the [Make GTA 6 Cover Art](https://make.fun/bounty/gta6-cover-art-01) bounty on [make.fun](https://make.fun/).
+Turn your photos into a sun-soaked movie poster. A static, offline
+single-page web app: load up to 6 of your own photos (they never leave
+your machine), crop, pan and zoom each one inside its panel, edit the
+caption live, and export a dense movie-poster PNG.
 
-## How to run it
+Bounty: https://make.fun/bounty/gta6-cover-art-01
+
+## Run it
 
 ```sh
 node serve.ts
+# open http://localhost:8080
 ```
 
-Then open http://localhost:8080 in desktop Chrome. Or open `app/index.html` directly — the app is static files with no build step and works with no network request. Your photos are read on your own machine and never uploaded.
+No build step, no network requests. Everything — photos, fonts, code —
+is local.
 
-## How it works
+## What the poster has
 
-1. Load photos — up to five, from your machine or the built-in samples.
-2. Pick a layout and a colour grade, write the lettering.
-3. Export a PNG in a common post size.
+- **Top quote bar** — five gold stars, an invented quote, and a fake
+  newspaper name (THE VICE BAY LEDGER). Never a real publication.
+- **Cast grid** — six panels, each a different person with a role chip:
+  THE DRIVER, THE BOSS, THE BRAINS, THE FIXER, THE LOOKOUT, THE GETAWAY.
+  One large hero panel plus smaller panels. Two layouts: Cast grid and
+  Spotlight.
+- **Giant striped title** — retro sunset-striped gradient lettering
+  (gold-orange-pink) with a pink script subtitle. The title lives in its
+  own band and never overlaps a face.
+- **Bottom credit block** — fake production credits, a drawn barcode,
+  COMING SOON, a VOL. 1 badge and a gold seal, over a skyline silhouette
+  that sits behind the text. No dead empty band anywhere.
+- **Three colour grades** — Sunset, Neon, Dusk.
+- **Three export sizes** — 1080×1080, 1080×1350, 1920×1080 PNG.
+- **Six built-in sample portraits** — AI-generated fictional people at
+  golden hour, so the app works with photos loaded out of the box.
+- **Screenshot staging** — `?shot=cover` renders the export view
+  full-bleed, `?shot=editor` shows the editor with a photo loaded
+  (see `shots.json`).
 
-## Features
+All artwork, names, roles, quotes and credits are invented. No Rockstar
+logo, wordmark, official artwork, characters, or fonts are used.
 
-- **3 layouts**, including the 5-panel Vice Grid (large hero panel + 2×2 grid), Sunset Strip, and Neon Solo.
-- **4 colour grades**: Sunset, Neon Night, Vice Gold, and Palm Dusk.
-- **5 photo slots** with crop, pan, and zoom per panel; fill all panels with one photo or use several.
-- **3 export sizes**: 1080×1080, 1080×1350, and 1920×1080 PNG.
-- **Sunburst + skyline banner** decoration, drawn on canvas and toggleable.
-- **Heat meter** (1–5 stars), editable corner ribbon, place pill, and neon signs.
-- **Bold gradient lettering** with a pink script subtitle and tagline, in Anton and Pacifico (SIL Open Font License), loaded from local files.
-- Fully offline: no network requests, no uploads, no tracking.
+## Files
+
+- `app/index.html`, `app/style.css` — editor shell and styling.
+- `app/src/main.js` — editor state, controls, pan/zoom gestures, export.
+- `app/src/cover.js` — the canvas poster renderer and PNG export.
+- `app/src/shots.js` — `?shot=` staging params.
+- `app/fonts/` — Anton and Pacifico (see below).
+- `app/samples/` — six generated cast portraits.
+- `main.ts` — copies `app/` and `screenshots/` to the output dir and
+  writes `dossier.json`.
+
+## Fonts
+
+- **Anton** (display) and **Pacifico** (script), both under the
+  [SIL Open Font License 1.1](https://openfontlicense.org/). Source:
+  https://github.com/google/fonts (ofl/anton, ofl/pacifico). License
+  texts are included in `app/fonts/OFL.txt` summaries below; the full
+  OFL text ships with the google/fonts repository.
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+MIT — see `LICENSE`.
