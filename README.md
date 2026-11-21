@@ -1,70 +1,27 @@
-![make.fun](https://make.fun/badge/gta6-cover-art-01.svg)
-![rank](https://make.fun/badge/gta6-cover-art-01/tuyullsxx1-cmd/gta6-cover-art/rank.svg)
-![reward](https://make.fun/badge/gta6-cover-art-01/tuyullsxx1-cmd/gta6-cover-art/reward.svg)
+[![make.fun · gta6-cover-art-01](https://make.fun/badge/gta6-cover-art-01.svg)](https://make.fun/bounty/gta6-cover-art-01?utm_source=github&utm_medium=readme&utm_campaign=gta6-cover-art-01)
+[![rank](https://make.fun/badge/gta6-cover-art-01/tuyullsxx1-cmd/gta6-cover-art/rank.svg)](https://make.fun/bounty/gta6-cover-art-01/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=gta6-cover-art-01)
+[![reward](https://make.fun/badge/gta6-cover-art-01/tuyullsxx1-cmd/gta6-cover-art/reward.svg)](https://make.fun/bounty/gta6-cover-art-01?utm_source=github&utm_medium=readme&utm_campaign=gta6-cover-art-01)
 
 # Palm Smoke Studio
 
-Turn your photos into a sun-soaked movie poster. A static, offline
-single-page web app: load up to 6 of your own photos (they never leave
-your machine), crop, pan and zoom each one inside its panel, edit the
-caption live, and export a dense movie-poster PNG.
+Turn your photos into a dense movie poster — a GTA 6-style cover with a six-person cast, a giant striped sunset title, a quote bar, and a full credit block with a drawn barcode, COMING SOON, a VOL. 1 badge and a gold seal.
 
-Bounty: https://make.fun/bounty/gta6-cover-art-01
+The poster is called **PALM SMOKE** — *"one last sunset job"*, *"Pure sunshine noir — the getaway of the year." — THE VICE BAY LEDGER*. The cast: THE DRIVER (hero), THE BOSS, THE BRAINS, THE FIXER, THE LOOKOUT, THE GETAWAY. Six AI-generated portraits ship as samples, or upload up to six of your own photos — they never leave your machine.
+
+## What it does
+
+- Photo upload per cast panel, with drag-to-pan and scroll-to-zoom cropping (face-aware: wide panels crop on the upper third so faces stay in frame)
+- Live caption editing for every role chip
+- 2 layouts (Cast grid, Spotlight) and 3 grades (Sunset, Neon, Dusk)
+- Exact PNG exports: 1080×1080, 1080×1350, 1920×1080
+- Fully offline: every font, image and script is a file under `app/`
 
 ## Run it
 
 ```sh
 node serve.ts
-# open http://localhost:8080
 ```
 
-No build step, no network requests. Everything — photos, fonts, code —
-is local.
+Then open http://localhost:8080 — the studio loads with the six sample portraits. Screenshot staging: `?shot=cover`, `?shot=editor`, `?shot=cover2`, `?shot=cover3`.
 
-## What the poster has
-
-- **Top quote bar** — five gold stars, an invented quote, and a fake
-  newspaper name (THE VICE BAY LEDGER). Never a real publication.
-- **Cast grid** — six panels, each a different person with a role chip:
-  THE DRIVER, THE BOSS, THE BRAINS, THE FIXER, THE LOOKOUT, THE GETAWAY.
-  One large hero panel plus smaller panels. Two layouts: Cast grid and
-  Spotlight.
-- **Giant striped title** — retro sunset-striped gradient lettering
-  (gold-orange-pink) with a pink script subtitle. The title lives in its
-  own band and never overlaps a face.
-- **Bottom credit block** — fake production credits, a drawn barcode,
-  COMING SOON, a VOL. 1 badge and a gold seal, over a skyline silhouette
-  that sits behind the text. No dead empty band anywhere.
-- **Three colour grades** — Sunset, Neon, Dusk.
-- **Three export sizes** — 1080×1080, 1080×1350, 1920×1080 PNG.
-- **Six built-in sample portraits** — AI-generated fictional people at
-  golden hour, so the app works with photos loaded out of the box.
-- **Screenshot staging** — `?shot=cover` renders the export view
-  full-bleed, `?shot=editor` shows the editor with a photo loaded
-  (see `shots.json`).
-
-All artwork, names, roles, quotes and credits are invented. No Rockstar
-logo, wordmark, official artwork, characters, or fonts are used.
-
-## Files
-
-- `app/index.html`, `app/style.css` — editor shell and styling.
-- `app/src/main.js` — editor state, controls, pan/zoom gestures, export.
-- `app/src/cover.js` — the canvas poster renderer and PNG export.
-- `app/src/shots.js` — `?shot=` staging params.
-- `app/fonts/` — Anton and Pacifico (see below).
-- `app/samples/` — six generated cast portraits.
-- `main.ts` — copies `app/` and `screenshots/` to the output dir and
-  writes `dossier.json`.
-
-## Fonts
-
-- **Anton** (display) and **Pacifico** (script), both under the
-  [SIL Open Font License 1.1](https://openfontlicense.org/). Source:
-  https://github.com/google/fonts (ofl/anton, ofl/pacifico). License
-  texts are included in `app/fonts/OFL.txt` summaries below; the full
-  OFL text ships with the google/fonts repository.
-
-## License
-
-MIT — see `LICENSE`.
+Bounty: https://make.fun/bounty/gta6-cover-art-01
