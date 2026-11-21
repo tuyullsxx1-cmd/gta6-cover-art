@@ -1,253 +1,289 @@
-// Vice Neon Cover Studio — wires the editor: photo slots, layout and grade pickers,
-// lettering inputs, panel pan/zoom on the preview canvas, and PNG export.
-// A `?shot=` query sets up a fixed scene for a screenshot instead (./shots.js).
-import { drawCoverArt, defaultState, GRADES, LAYOUTS, EXPORT_SIZES, panelAt, exportCoverBlob } from './cover.js';
-import { runShot } from './shots.js';
+// main.js — Palm Smoke Studio editor: state, controls, live preview,
+// photo load / crop / pan / zoom, and PNG export. Imports the poster
+// renderer from cover.js and the staging params from shots.js.
+import { renderPoster, exportPNG, panelRects, GRADES, CAST, SIZES } from './cover.js';
+import { parseShot, sampleSrc } from './shots.js';
 
-const canvas = document.getElementById('cover');
-const status = document.getElementById('status');
-const state = defaultState();
-let previewSize = EXPORT_SIZES[0];
-// A ?shot= query means this load is a fixed screenshot scene, not the editor.
-const query = new URLSearchParams(location.search);
-const shot = query.get('shot');
+const $ = (id) => document.getElementById(id);
 
-/** Loads an image from a URL, resolving to the image once it can be drawn. */
-export function loadImage(url) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = url;
-  });
+export function defaultState() {
+  return {
+    title: 'PALM SMOKE',
+    subtitle: 'one last sunset job',
+    quote: 'Pure sunshine noir — the getaway of the year.',
+    paper: 'THE VICE BAY LEDGER',
+    layout: 'grid',
+    grade: 'sunset',
+    size: '1920x1080',
+    photos: CAST.map((c) => ({ src: c.src, zoom: 1, ox: 0, oy: 0 })),
+  };
 }
 
-/** Loads an image from a user-picked file, as a data: URI that never leaves the machine. */
-export function loadImageFile(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => loadImage(reader.result).then(resolve, reject);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+let state = defaultState();
+let selected = 0;
+let renderQueued = false;
+window.__state = state;
+window.__renderCount = 0;
+
+const preview = $('preview');
+const coverCanvas = $('coverCanvas');
+
+function previewDims() {
+  const [w, h] = SIZES[state.size] || SIZES['1920x1080'];
+  const scale = Math.min(1, 960 / w, 540 / h);
+  return [Math.round(w * scale), Math.round(h * scale)];
 }
 
-function redraw() {
-  canvas.width = previewSize.width;
-  canvas.height = previewSize.height;
-  // In a ?shot= scene the cover is the product: no editor selection outline.
-  drawCoverArt(canvas, state, shot ? null : state.selected);
-}
-
-function setStatus(text) {
-  status.textContent = text;
-}
-
-// --- Photo slots -----------------------------------------------------------
-const slotsEl = document.getElementById('slots');
-
-function buildPhotoSlots() {
-  slotsEl.innerHTML = '';
-  state.photos.forEach((photo, i) => {
-    const row = document.createElement('div');
-    row.className = 'slot' + (state.selected === i ? ' selected' : '');
-    row.dataset.slot = String(i);
-    const thumb = document.createElement('img');
-    thumb.className = 'thumb';
-    thumb.alt = '';
-    if (photo) thumb.src = photo.src;
-    const name = document.createElement('span');
-    name.className = 'slot-name';
-    name.textContent = `Photo ${i + 1}`;
-    const st = document.createElement('span');
-    st.className = 'slot-state';
-    st.textContent = photo ? 'loaded' : 'empty';
-    const label = document.createElement('span');
-    label.append(name, document.createElement('br'), st);
-    const pick = document.createElement('button');
-    pick.type = 'button';
-    pick.className = 'pick';
-    pick.textContent = photo ? 'Replace' : 'Add photo';
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.addEventListener('change', async () => {
-      const file = input.files[0];
-      if (!file) return;
-      state.photos[i] = await loadImageFile(file);
-      state.transforms[i] = { x: 0, y: 0, zoom: 1 };
-      state.selected = i;
-      syncZoomSlider();
-      buildPhotoSlots();
-      redraw();
-      setStatus(`Photo ${i + 1} loaded — drag it into place, then export.`);
-    });
-    pick.addEventListener('click', (e) => { e.stopPropagation(); input.click(); });
-    row.addEventListener('click', () => { state.selected = i; syncZoomSlider(); buildPhotoSlots(); redraw(); });
-    row.append(thumb, label, pick, input);
-    slotsEl.append(row);
-  });
-}
-
-// --- Layout and grade pickers ----------------------------------------------
-function buildPicker(el, options, current, onPick) {
-  el.innerHTML = '';
-  for (const [id, def] of Object.entries(options)) {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.setAttribute('aria-pressed', String(id === current));
-    b.dataset.id = id;
-    if (def.skyTop) {
-      const dot = document.createElement('span');
-      dot.className = 'swatch';
-      dot.style.background = `linear-gradient(135deg, ${def.skyTop}, ${def.skyMid} 55%, ${def.skyBottom})`;
-      b.append(dot);
+export function renderPreview() {
+  if (renderQueued) return;
+  renderQueued = true;
+  requestAnimationFrame(async () => {
+    renderQueued = false;
+    if (document.body.classList.contains('cover-mode')) return;
+    const [pw, ph] = previewDims();
+    if (preview.width !== pw || preview.height !== ph) {
+      preview.width = pw;
+      preview.height = ph;
     }
-    b.append(def.label);
-    b.addEventListener('click', () => { onPick(id); buildPicker(el, options, id, onPick); });
-    el.append(b);
+    await renderPoster(preview, state);
+    window.__renderCount += 1;
+    if (!window.__ready) window.__ready = true;
+  });
+}
+
+function renderCoverMode() {
+  const [w, h] = SIZES[state.size] || SIZES['1920x1080'];
+  coverCanvas.width = w;
+  coverCanvas.height = h;
+  renderPoster(coverCanvas, state).then(() => {
+    window.__renderCount += 1;
+    window.__ready = true;
+  });
+}
+
+// ---- slot cards ------------------------------------------------------------
+
+function slotCard(i) {
+  const card = document.createElement('div');
+  card.className = 'slot';
+  card.dataset.slot = String(i);
+  card.innerHTML = `
+    <div class="slot-head"><span class="slot-role">${CAST[i].role}</span><span class="slot-num">#${i + 1}</span></div>
+    <img class="slot-thumb" alt="panel ${i + 1} photo">
+    <label class="slot-file">Load photo<input type="file" accept="image/*" hidden></label>
+    <label class="slot-row">Zoom <input type="range" min="1" max="3" step="0.05" value="1"></label>
+    <label class="slot-row">Pan X <input type="range" min="-0.5" max="0.5" step="0.01" value="0"></label>
+    <label class="slot-row">Pan Y <input type="range" min="-0.5" max="0.5" step="0.01" value="0"></label>
+    <button type="button" class="slot-fill">Use in all panels</button>`;
+  const [thumb, file, zoom, ox, oy, fill] = [
+    card.querySelector('.slot-thumb'),
+    card.querySelector('input[type=file]'),
+    ...card.querySelectorAll('input[type=range]'),
+    card.querySelector('.slot-fill'),
+  ];
+  const syncThumb = () => {
+    thumb.src = state.photos[i].src;
+    thumb.style.objectPosition = `${50 + state.photos[i].ox * 100}% ${50 + state.photos[i].oy * 100}%`;
+    card.classList.toggle('selected', selected === i);
+  };
+  card.addEventListener('click', (e) => {
+    if (e.target.closest('input,button,label')) return;
+    selected = i;
+    document.querySelectorAll('.slot').forEach((el) => el.classList.remove('selected'));
+    card.classList.add('selected');
+  });
+  file.addEventListener('change', () => {
+    const f = file.files && file.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      state.photos[i] = { src: String(reader.result), zoom: 1, ox: 0, oy: 0 };
+      zoom.value = '1';
+      ox.value = '0';
+      oy.value = '0';
+      syncThumb();
+      renderPreview();
+    };
+    reader.readAsDataURL(f);
+  });
+  zoom.addEventListener('input', () => {
+    state.photos[i].zoom = Number(zoom.value);
+    renderPreview();
+  });
+  ox.addEventListener('input', () => {
+    state.photos[i].ox = Number(ox.value);
+    syncThumb();
+    renderPreview();
+  });
+  oy.addEventListener('input', () => {
+    state.photos[i].oy = Number(oy.value);
+    syncThumb();
+    renderPreview();
+  });
+  fill.addEventListener('click', () => {
+    const src = state.photos[i].src;
+    state.photos = state.photos.map(() => ({ src, zoom: 1, ox: 0, oy: 0 }));
+    buildSlots();
+    renderPreview();
+  });
+  card._sync = syncThumb;
+  syncThumb();
+  return card;
+}
+
+function buildSlots() {
+  const wrap = $('slots');
+  wrap.innerHTML = '';
+  for (let i = 0; i < 6; i++) wrap.appendChild(slotCard(i));
+}
+
+// ---- controls ---------------------------------------------------------------
+
+function bindText(id, key) {
+  const el = $(id);
+  el.value = state[key];
+  el.addEventListener('input', () => {
+    state[key] = el.value;
+    renderPreview();
+  });
+}
+
+function bindChoice(selector, key, values) {
+  document.querySelectorAll(selector).forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.value === state[key]);
+    btn.addEventListener('click', () => {
+      state[key] = btn.dataset.value;
+      document.querySelectorAll(selector).forEach((b) => b.classList.toggle('active', b === btn));
+      renderPreview();
+    });
+  });
+}
+
+function bindSize() {
+  const sel = $('sizeSelect');
+  sel.value = state.size;
+  sel.addEventListener('change', () => {
+    state.size = sel.value;
+    renderPreview();
+  });
+}
+
+function bindExport() {
+  $('exportBtn').addEventListener('click', async () => {
+    const [w, h] = SIZES[state.size] || SIZES['1920x1080'];
+    const status = $('exportStatus');
+    status.textContent = `Rendering ${w}×${h}…`;
+    const blob = await exportPNG(state, w, h);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `palm-smoke-${w}x${h}.png`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    window.__lastExport = { w, h, bytes: blob.size };
+    status.textContent = `Exported ${w}×${h} PNG (${(blob.size / 1048576).toFixed(2)} MB)`;
+  });
+  $('resetBtn').addEventListener('click', () => {
+    state = defaultState();
+    window.__state = state;
+    selected = 0;
+    bindText('titleInput', 'title');
+    bindText('subtitleInput', 'subtitle');
+    bindText('quoteInput', 'quote');
+    bindText('paperInput', 'paper');
+    $('sizeSelect').value = state.size;
+    document.querySelectorAll('.layout-btn').forEach((b) => b.classList.toggle('active', b.dataset.value === state.layout));
+    document.querySelectorAll('.grade-btn').forEach((b) => b.classList.toggle('active', b.dataset.value === state.grade));
+    buildSlots();
+    renderPreview();
+  });
+}
+
+// ---- drag to pan / wheel to zoom on the preview -----------------------------
+
+function bindPreviewGestures() {
+  let drag = null;
+  const toCanvas = (e) => {
+    const r = preview.getBoundingClientRect();
+    return {
+      x: ((e.clientX - r.left) / r.width) * preview.width,
+      y: ((e.clientY - r.top) / r.height) * preview.height,
+    };
+  };
+  preview.addEventListener('pointerdown', (e) => {
+    const p = toCanvas(e);
+    const rects = panelRects(preview.width, preview.height, state.layout);
+    const hit = rects.findIndex((r) => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h);
+    if (hit >= 0) {
+      selected = hit;
+      document.querySelectorAll('.slot').forEach((el, i) => el.classList.toggle('selected', i === hit));
+      drag = { x: p.x, y: p.y, ox: state.photos[hit].ox, oy: state.photos[hit].oy, rect: rects[hit] };
+      preview.setPointerCapture(e.pointerId);
+    }
+  });
+  preview.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    const p = toCanvas(e);
+    const s = state.photos[selected];
+    s.ox = Math.max(-0.5, Math.min(0.5, drag.ox + (p.x - drag.x) / drag.rect.w));
+    s.oy = Math.max(-0.5, Math.min(0.5, drag.oy + (p.y - drag.y) / drag.rect.h));
+    const card = document.querySelector(`.slot[data-slot="${selected}"]`);
+    if (card) {
+      const ranges = card.querySelectorAll('input[type=range]');
+      if (ranges[1]) ranges[1].value = String(s.ox);
+      if (ranges[2]) ranges[2].value = String(s.oy);
+      const thumb = card.querySelector('.slot-thumb');
+      if (thumb) thumb.style.objectPosition = `${50 + s.ox * 100}% ${50 + s.oy * 100}%`;
+    }
+    renderPreview();
+  });
+  preview.addEventListener('pointerup', () => { drag = null; });
+  preview.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const s = state.photos[selected];
+    const f = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+    s.zoom = Math.max(1, Math.min(3, (s.zoom || 1) * f));
+    const card = document.querySelector(`.slot[data-slot="${selected}"]`);
+    if (card) {
+      const ranges = card.querySelectorAll('input[type=range]');
+      if (ranges[0]) ranges[0].value = String(s.zoom);
+    }
+    renderPreview();
+  }, { passive: false });
+}
+
+// ---- boot -------------------------------------------------------------------
+
+function applyShotParams(p) {
+  if (p.caption) state.title = p.caption;
+  if (p.photo) state.photos[0] = { src: sampleSrc(p.photo), zoom: 1, ox: 0, oy: 0 };
+  if (p.grade && GRADES[p.grade]) state.grade = p.grade;
+  if (p.layout === 'grid' || p.layout === 'spotlight') state.layout = p.layout;
+  if (p.size && SIZES[p.size]) state.size = p.size;
+}
+
+function boot() {
+  const p = parseShot();
+  applyShotParams(p);
+  buildSlots();
+  bindText('titleInput', 'title');
+  bindText('subtitleInput', 'subtitle');
+  bindText('quoteInput', 'quote');
+  bindText('paperInput', 'paper');
+  bindChoice('.layout-btn', 'layout');
+  bindChoice('.grade-btn', 'grade');
+  bindSize();
+  bindExport();
+  bindPreviewGestures();
+  if (p.shot === 'cover') {
+    document.body.classList.add('cover-mode');
+    $('coverMode').hidden = false;
+    renderCoverMode();
+  } else {
+    renderPreview();
   }
 }
 
-buildPicker(document.getElementById('layout-picker'), LAYOUTS, state.layout, (id) => {
-  state.layout = id;
-  redraw();
-});
-buildPicker(document.getElementById('grade-picker'), GRADES, state.grade, (id) => {
-  state.grade = id;
-  redraw();
-});
-
-// --- Lettering ---------------------------------------------------------------
-const titleInput = document.getElementById('title');
-const subtitleInput = document.getElementById('subtitle');
-const taglineInput = document.getElementById('tagline');
-const placeInput = document.getElementById('place');
-const ribbonInput = document.getElementById('ribbon');
-const heatInput = document.getElementById('heat');
-const heatStars = document.getElementById('heat-stars');
-const bannerInput = document.getElementById('banner');
-function syncHeat() {
-  const h = Math.max(0, Math.min(5, Math.round(state.heat ?? 4)));
-  heatStars.textContent = '★'.repeat(h) + '☆'.repeat(5 - h);
-}
-titleInput.addEventListener('input', () => { state.title = titleInput.value; redraw(); });
-subtitleInput.addEventListener('input', () => { state.subtitle = subtitleInput.value; redraw(); });
-taglineInput.addEventListener('input', () => { state.tagline = taglineInput.value; redraw(); });
-placeInput.addEventListener('input', () => { state.place = placeInput.value; redraw(); });
-ribbonInput.addEventListener('input', () => { state.ribbon = ribbonInput.value; redraw(); });
-heatInput.addEventListener('input', () => { state.heat = Number(heatInput.value); syncHeat(); redraw(); });
-bannerInput.addEventListener('change', () => { state.banner = bannerInput.checked; redraw(); });
-syncHeat();
-
-// --- Pan and zoom on the preview --------------------------------------------
-const zoomSlider = document.getElementById('zoom');
-function syncZoomSlider() {
-  zoomSlider.value = String(state.transforms[state.selected].zoom);
-}
-zoomSlider.addEventListener('input', () => {
-  state.transforms[state.selected].zoom = Number(zoomSlider.value);
-  redraw();
-});
-
-let dragging = null;
-function canvasPoint(e) {
-  const rect = canvas.getBoundingClientRect();
-  return {
-    x: (e.clientX - rect.left) * (canvas.width / rect.width),
-    y: (e.clientY - rect.top) * (canvas.height / rect.height),
-  };
-}
-canvas.addEventListener('pointerdown', (e) => {
-  const p = canvasPoint(e);
-  const panel = panelAt(state, canvas.width, canvas.height, p.x, p.y);
-  if (!panel) return;
-  state.selected = panel.slot;
-  syncZoomSlider();
-  buildPhotoSlots();
-  canvas.setPointerCapture(e.pointerId);
-  dragging = { slot: panel.slot, startX: p.x, startY: p.y, panel };
-  redraw();
-});
-canvas.addEventListener('pointermove', (e) => {
-  if (!dragging) return;
-  const p = canvasPoint(e);
-  const t = state.transforms[dragging.slot];
-  t.x += (p.x - dragging.startX) / dragging.panel.w;
-  t.y += (p.y - dragging.startY) / dragging.panel.h;
-  t.x = Math.max(-0.6, Math.min(0.6, t.x));
-  t.y = Math.max(-0.6, Math.min(0.6, t.y));
-  dragging.startX = p.x;
-  dragging.startY = p.y;
-  redraw();
-});
-canvas.addEventListener('pointerup', () => { dragging = null; });
-canvas.addEventListener('wheel', (e) => {
-  e.preventDefault();
-  const t = state.transforms[state.selected];
-  t.zoom = Math.max(1, Math.min(3, t.zoom * (e.deltaY < 0 ? 1.08 : 0.93)));
-  syncZoomSlider();
-  redraw();
-}, { passive: false });
-
-// --- Fill all, samples, preview size, export --------------------------------
-document.getElementById('fill-all').addEventListener('click', () => {
-  const photo = state.photos[state.selected];
-  if (!photo) { setStatus('Load a photo into the selected slot first.'); return; }
-  state.photos = state.photos.map(() => photo);
-  state.transforms = state.transforms.map(() => ({ x: 0, y: 0, zoom: 1 }));
-  syncZoomSlider();
-  buildPhotoSlots();
-  redraw();
-  setStatus('One photo now fills every panel.');
-});
-
-document.getElementById('sample-photos').addEventListener('click', async () => {
-  const [vista, gangster, police, heli, pier] = await Promise.all([
-    loadImage('samples/vista.jpg'), loadImage('samples/gangster.jpg'),
-    loadImage('samples/police.jpg'), loadImage('samples/heli.jpg'),
-    loadImage('samples/pier.jpg'),
-  ]);
-  state.photos = [vista, gangster, police, heli, pier];
-  state.transforms = state.transforms.map(() => ({ x: 0, y: 0, zoom: 1 }));
-  syncZoomSlider();
-  buildPhotoSlots();
-  redraw();
-  setStatus('Sample photos loaded into all five panels.');
-});
-
-document.getElementById('preview-size').addEventListener('change', (e) => {
-  previewSize = EXPORT_SIZES.find((s) => s.id === e.target.value) ?? EXPORT_SIZES[0];
-  redraw();
-});
-
-for (const size of EXPORT_SIZES) {
-  document.getElementById(`export-${size.id}`).addEventListener('click', async () => {
-    setStatus(`Rendering ${size.label}…`);
-    const blob = await exportCoverBlob(state, size.id);
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `cover-${size.id}.png`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-    setStatus(`Saved cover-${size.id}.png`);
-  });
-}
-
-// --- Boot --------------------------------------------------------------------
-buildPhotoSlots();
-if (shot) {
-  runShot(shot, query, {
-    state, loadImage, redraw, syncHeat,
-    setPreviewSize(id) {
-      previewSize = EXPORT_SIZES.find((s) => s.id === id) ?? EXPORT_SIZES[0];
-      document.getElementById('preview-size').value = previewSize.id;
-    },
-    rebuild() { buildPhotoSlots(); syncZoomSlider(); },
-  });
-} else {
-  redraw();
-}
-
-// Redraw once the vendored fonts arrive, so the title uses Anton/Pacifico.
-if (document.fonts?.ready) document.fonts.ready.then(redraw);
+boot();
